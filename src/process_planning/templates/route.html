@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="process-revision" content="$revision">
+<meta name="passport-revision" content="$passport_revision">
+<title>МК · $designation</title>
+<style>
+@page { size: A4 landscape; margin: 10mm 5mm 5mm 20mm; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #e7e8e8; color: #111; font: 13px Arial, sans-serif; }
+.sheet { width: 282mm; min-height: 195mm; margin: 24px auto; padding: 0; background: white; border: .5mm solid #111; display: flex; flex-direction: column; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+td, th { border: .25mm solid #111; padding: 2mm; vertical-align: top; overflow-wrap: anywhere; }
+.head td { height: 15mm; vertical-align: middle; }
+.label { display: block; font-size: 10px; margin-bottom: 1.5mm; font-weight: normal; }
+.document { font-size: 19px; letter-spacing: 1px; font-weight: bold; }
+.designation { font-size: 17px; }
+.name { font-size: 16px; }
+.center { text-align: center; }
+.data td { height: 16mm; }
+.route { border-top: .5mm solid #111; flex: 1; }
+.route th { font-size: 11px; font-weight: normal; text-align: center; vertical-align: middle; height: 13mm; }
+.route td { white-space: pre-wrap; font-size: 12px; line-height: 1.35; }
+.operation { break-inside: avoid; }
+.operation td { padding-top: 3mm; padding-bottom: 3mm; }
+.operation td:first-child, .operation td:last-child { text-align: center; }
+.blank { height: 9mm; }
+.signatures { margin-top: auto; border-top: .5mm solid #111; }
+.signatures td { height: 8mm; padding: 1.5mm; vertical-align: middle; font-size: 11px; }
+.signatures .field { color: #333; }
+.note { font-size: 10px; padding: 2mm 3mm; letter-spacing: .3px; border-top: .25mm solid #111; }
+thead { display: table-header-group; }
+@media print {
+ body { background: white; }
+ .sheet { margin: 0; width: 100%; min-height: 190mm; }
+ .operation { break-inside: avoid; }
+}
+@media screen and (max-width: 1100px) { .sheet { margin: 12px; } }
+</style>
+</head>
+<body><main class="sheet">
+<table class="head"><colgroup><col style="width:22%"><col style="width:48%"><col style="width:20%"><col style="width:10%"></colgroup>
+<tr><td><span class="label">Организация</span>&nbsp;</td><td class="center document">МАРШРУТНАЯ КАРТА</td><td class="center designation">$designation</td><td class="center"><span class="label">Литера</span>ПРОЕКТ</td></tr>
+<tr><td><span class="label">Обозначение изделия</span>&nbsp;</td><td colspan="2" class="name"><span class="label">Наименование изделия / документа</span>$name</td><td class="center"><span class="label">МК</span>&nbsp;</td></tr>
+</table>
+<table class="data"><colgroup><col style="width:45%"><col style="width:45%"><col style="width:10%"></colgroup>
+<tr><td><span class="label">Материал</span>$material</td><td><span class="label">Заготовка</span>$blank</td><td><span class="label">Партия, шт.</span>&nbsp;</td></tr>
+</table>
+<table class="route"><colgroup><col style="width:5%"><col style="width:20%"><col style="width:18%"><col style="width:33%"><col style="width:17%"><col style="width:7%"></colgroup>
+<thead><tr><th>№ опер.</th><th>Наименование операции<br>Цех · участок · РМ</th><th>Оборудование<br>и оснастка</th><th>Содержание операции<br>Установы и переходы</th><th>Контроль</th><th>Время,<br>мин</th></tr></thead>
+<tbody>$rows</tbody></table>
+<table class="signatures"><colgroup><col style="width:10%"><col style="width:17%"><col style="width:11%"><col style="width:10%"><col style="width:10%"><col style="width:17%"><col style="width:11%"><col style="width:14%"></colgroup>
+<tr><td>Разработал</td><td class="field"></td><td>Подпись</td><td>Дата</td><td>Проверил</td><td class="field"></td><td>Подпись</td><td>Дата</td></tr>
+<tr><td>Н. контр.</td><td class="field"></td><td></td><td></td><td>Утвердил</td><td class="field"></td><td></td><td></td></tr>
+</table>
+<div class="note">МК · ПРОЕКТ ДЛЯ ПРОВЕРКИ ТЕХНОЛОГОМ</div>
+</main></body></html>

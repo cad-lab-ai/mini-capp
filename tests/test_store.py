@@ -85,12 +85,19 @@ def test_missing_and_unconfirmed_resources(store):
 
 def test_render_escapes_and_carries_revision(store):
     rev = put(store, "factory/equipment/a.json", resource())
-    put(store, "processes/plan.json", plan(rev))
+    record = plan(rev)
+    record["operations"][0]["name"] = "<script>operation</script>"
+    record["open_questions"] = ["Private review question"]
+    put(store, "processes/plan.json", record)
     result = render_route(store, "processes/plan.json")
     assert "<script>" not in result["html"]
     assert "&lt;script&gt;" in result["html"]
     assert rev in result["html"]
-    assert "ЕСТД не проверено" in result["html"]
+    assert "МАРШРУТНАЯ КАРТА" in result["html"]
+    assert "Допущения" not in result["html"]
+    assert "Private review question" not in result["html"]
+    assert "missing_resource" not in result["html"]
+    assert result["validation"]["findings"]
 
 
 def test_external_edits_rejected(store):

@@ -1,4 +1,6 @@
 from html import escape
+from pathlib import Path
+from string import Template
 
 from .models import ProcessPlan
 from .store import Store
@@ -45,19 +47,14 @@ def render_route(store: Store, path: str, revision: str | None = None) -> dict:
     e = lambda value: escape(str(value), quote=True)
     rows = []
     for op in plan.operations:
-        rows.append("<tr>" + "".join(f"<td>{e(v)}</td>" for v in (
-            op.id, op.name, ", ".join(op.resource_ids), "\n".join(op.setups),
-            "\n".join(op.transitions), "\n".join(op.control),
-            "—" if op.time_minutes is None else f"{op.time_minutes} ({op.time_source or 'источник не указан'})")) + "</tr>")
-    html = "<!doctype html><html lang='ru'><meta charset='utf-8'><title>Маршрутная карта — черновик</title>"
-    html += "<style>body{font:14px sans-serif;margin:28px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:7px;white-space:pre-wrap}small{overflow-wrap:anywhere}</style>"
-    html += f"<h1>{e(plan.name)}</h1><p>ЧЕРНОВИК. Обзорная форма; соответствие ЕСТД не проверено.</p>"
-    html += f"<p>Деталь: {e(plan.part_revision)}. Источник КД: {e(plan.drawing_source)}</p>"
-    html += f"<p>Материал: {e(plan.material)}. Заготовка: {e(plan.blank)}</p>"
-    html += f"<small>Ревизия техпроцесса: {e(assessment['revision'])}<br>Паспорт: {e(plan.passport_revision)}</small>"
-    html += "<table><thead><tr><th>№</th><th>Операция</th><th>Ресурсы</th><th>Установы</th><th>Переходы</th><th>Контроль</th><th>Время, мин</th></tr></thead><tbody>" + "".join(rows) + "</tbody></table>"
-    for title, items in (("Допущения", plan.assumptions), ("Нерешённые вопросы", plan.open_questions)):
-        html += f"<h2>{title}</h2><ul>" + "".join(f"<li>{e(item)}</li>" for item in items) + "</ul>"
-    html += f"<p>Структура: {e(assessment['structural_status'])}. Инженерная проверка: не выполнена.</p>"
-    html += "<ul>" + "".join(f"<li>{e(item)}</li>" for item in assessment["findings"]) + "</ul></html>"
+        rows.append("<tr class='operation'>" + "".join(f"<td>{e(v)}</td>" for v in (
+            op.id, op.name, ", ".join(op.resource_ids),
+            "\n".join(op.setups + op.transitions), "\n".join(op.control),
+            "" if op.time_minutes is None else op.time_minutes)) + "</tr>")
+    for _ in range(max(0, 7 - len(plan.operations))):
+        rows.append("<tr class='blank'>" + "<td>&nbsp;</td>" * 6 + "</tr>")
+    template = Template(Path(__file__).with_name("templates").joinpath("route.html").read_text(encoding="utf-8"))
+    html = template.substitute(name=e(plan.name), designation=e(plan.id), material=e(plan.material),
+                               blank=e(plan.blank), rows="".join(rows), revision=e(assessment["revision"]),
+                               passport_revision=e(plan.passport_revision))
     return {"media_type": "text/html", "html": html, "validation": assessment}
