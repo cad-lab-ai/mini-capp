@@ -1,5 +1,4 @@
 from html import escape
-from pathlib import Path
 from string import Template
 
 from .models import ProcessPlan
@@ -53,8 +52,10 @@ def render_route(store: Store, path: str, revision: str | None = None) -> dict:
             "" if op.time_minutes is None else op.time_minutes)) + "</tr>")
     for _ in range(max(0, 7 - len(plan.operations))):
         rows.append("<tr class='blank'>" + "<td>&nbsp;</td>" * 6 + "</tr>")
-    template = Template(Path(__file__).with_name("templates").joinpath("route.html").read_text(encoding="utf-8"))
+    template_info = store.template_get(assessment["revision"])
+    template = Template(template_info["html"])
     html = template.substitute(name=e(plan.name), designation=e(plan.id), material=e(plan.material),
                                blank=e(plan.blank), rows="".join(rows), revision=e(assessment["revision"]),
                                passport_revision=e(plan.passport_revision))
-    return {"media_type": "text/html", "html": html, "validation": assessment}
+    return {"media_type": "text/html", "html": html, "validation": assessment,
+            "template": {k: template_info[k] for k in ("source", "path", "revision")}}

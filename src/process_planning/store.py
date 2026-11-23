@@ -11,6 +11,7 @@ import re
 import subprocess
 
 from .models import ProcessPlan, Resource
+from .templating import FIELDS, builtin_template, check_template
 
 SECTIONS = ("general", "equipment", "workplaces", "tooling", "materials", "capabilities", "quality", "subcontractors")
 MAX_FILE = 64_000
@@ -66,7 +67,7 @@ class Store:
 
     def path(self, value: str) -> Path:
         parts = PurePosixPath(value).parts
-        if (not parts or parts[0] not in ("factory", "processes") or "\\" in value or any(ord(c) < 32 for c in value)
+        if (not parts or parts[0] not in ("factory", "processes", "templates") or "\\" in value or any(ord(c) < 32 for c in value)
                 or any(p in (".", "..") or p.startswith(".") and p != ".keep" or ":" in p for p in parts)
                 or value != "/".join(parts)):
             raise ValueError("invalid workspace path; use factory/... or processes/...")
@@ -85,7 +86,20 @@ class Store:
         return self.git("rev-parse", "--verify", f"{value or 'HEAD'}^{{commit}}")
 
     def files(self, revision: str) -> list[str]:
-        return self.git("ls-tree", "-r", "--name-only", revision, "--", "factory", "processes").splitlines()
+        return self.git("ls-tree", "-r", "--name-only", revision, "--", "factory", "processes", "templates").splitlines()
+
+    def template_get(self, revision: str | None = None) -> dict:
+        with self.locked():
+            rev = self.revision(revision)
+            self.path("templates/route.html")
+            custom = "templates/route.html" in self.files(rev)
+            html = self.git("show", f"{rev}:templates/route.html") if custom else builtin_template()
+            return {"revision": rev, "source": "workspace" if custom else "builtin", "path": "templates/route.html",
+                    "html": html, "placeholders": list(FIELDS), "required_placeholders": ["rows"]}
+
+    def template_edit(self, expected_revision: str, html: str, label: str) -> dict:
+        check_template(html)
+        return self.apply(expected_revision, label, [], template_html=html)
 
     def load(self, path: str, revision: str) -> dict:
         self.path(path)
@@ -127,8 +141,8 @@ class Store:
             more = offset + limit < len(values)
             return {"truncated": more, "revision": rev, "matched": len(values), "entries": values[offset:offset + limit], "next_offset": offset + limit if more else None}
 
-    def apply(self, expected_revision: str, label: str, changes: list[dict]) -> dict:
-        if not label.strip() or len(label) > 300 or not 1 <= len(changes) <= 100:
+    def apply(self, expected_revision: str, label: str, changes: list[dict], *, template_html: str | None = None) -> dict:
+        if not label.strip() or len(label) > 300 or not (1 <= len(changes) <= 100 or template_html is not None and not changes):
             raise ValueError("provide a label (1..300 chars) and 1..100 changes")
         with self.locked():
             before = self.revision()
@@ -141,14 +155,19 @@ class Store:
             try:
                 for change in changes:
                     self._change(change)
+                if template_html is not None:
+                    check_template(template_html)
+                    p = self.path("templates/route.html")
+                    p.parent.mkdir(parents=True, exist_ok=True)
+                    p.write_text(template_html, encoding="utf-8")
                 self._check_records()
-                self.git("add", "--", "factory", "processes")
+                self.git("add", "--", *[base for base in ("factory", "processes", "templates") if self.path(base).exists()])
                 if not self.git("diff", "--cached", "--name-only"):
                     return {"revision": before, "changed": False}
                 self.git("commit", "-m", label)
                 return {"revision": self.revision(), "previous_revision": before, "changed": True}
             except Exception:
-                for base in ("factory", "processes"):
+                for base in ("factory", "processes", "templates"):
                     for p in sorted(self.path(base).rglob("*"), key=lambda x: len(x.parts), reverse=True):
                         if p.is_file():
                             p.unlink()
@@ -167,6 +186,8 @@ class Store:
         if op not in keys or set(change) != keys[op]:
             raise ValueError("invalid change; use mkdir/put/move/delete with documented fields")
         p = self.path(change["path"])
+        if change["path"].startswith("templates/") or change["path"] == "templates":
+            raise ValueError("use template_edit to modify the route template")
         if len(PurePosixPath(change["path"]).parts) < 2 or p.name == ".keep":
             raise ValueError("cannot mutate workspace roots or internal markers")
         if op == "mkdir":

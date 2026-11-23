@@ -26,6 +26,7 @@ def tool_contract() -> dict:
             "changes": {"mkdir": ["op", "path"], "put": ["op", "path", "record"], "move": ["op", "path", "destination"], "delete": ["op", "path"]},
             "semantics": "put replaces one complete record; omitted fields receive schema defaults. mkdir creates a section. move preserves record IDs. delete requires an empty directory or one file. All paths relative to factory/ or processes/. Batch = one Git commit, errors roll back the whole batch. No code execution. Expected revision prevents lost updates.",
             "limits": {"record_bytes": 64000, "batch_changes": 100, "list_limit": 100},
+            "templates": "template_get reads the effective route template. template_edit replaces the workspace template with expected_revision, as one Git commit. $rows is required; template_get lists all allowed placeholders. route_preview uses the template at the requested plan revision, with builtin fallback. change_apply cannot edit templates.",
             "checks": "Schema, unique IDs, pinned revision existence, resource references/availability/evidence, time provenance. Engineering validity and ESTD compliance remain unknown.",
             "deployment": "Local stdio only; service-owned workspace, no external writers. Not a multi-tenant HTTP service."}
 
@@ -80,6 +81,18 @@ def validate(path: str, revision: str | None = None) -> dict:
 def route_preview(path: str, revision: str | None = None) -> dict:
     """Render a draft HTML route card from a plan. Returns HTML; does not write files. Not an approved ESTD form."""
     return render_route(store, path, revision)
+
+
+@mcp.tool(annotations=READ)
+def template_get(revision: str | None = None) -> dict:
+    """Read the effective route HTML template (custom or builtin), workspace revision and allowed placeholders. Max 64 KB."""
+    return store.template_get(revision)
+
+
+@mcp.tool(annotations=WRITE)
+def template_edit(expected_revision: str, html: str, label: str = "Customize route card template") -> dict:
+    """Replace the route HTML/CSS template for this workspace. Read template_get first and preserve $rows. Validates placeholders, records a Git revision and rolls back errors. Existing process data is unchanged. Restore by reading a historical template_get and saving its html again."""
+    return store.template_edit(expected_revision, html, label)
 
 
 def main():
