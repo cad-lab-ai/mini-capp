@@ -1,0 +1,351 @@
+[
+  {
+    "name": "workspace_initialize",
+    "description": "Explicitly initialize an empty, service-owned workspace directory. Requires Git.",
+    "inputSchema": {
+      "properties": {},
+      "title": "workspace_initializeArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "tool_contract",
+    "description": "Get schemas, mutation grammar and supported checks. No model or CAD changes.",
+    "inputSchema": {
+      "properties": {},
+      "title": "tool_contractArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "catalog_list",
+    "description": "List immediate children of a directory, paginated, at HEAD or an immutable revision.",
+    "inputSchema": {
+      "properties": {
+        "path": {
+          "default": "factory",
+          "title": "Path",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        },
+        "offset": {
+          "default": 0,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "limit": {
+          "default": 30,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "title": "catalog_listArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "find",
+    "description": "Search records recursively under a section by ID, name or property text; returns compact cards.",
+    "inputSchema": {
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "path": {
+          "default": "factory",
+          "title": "Path",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        },
+        "offset": {
+          "default": 0,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "limit": {
+          "default": 30,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "findArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "inspect",
+    "description": "Read one JSON resource or process plan at a specific revision (max 64 KB per record).",
+    "inputSchema": {
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "inspectArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "change_apply",
+    "description": "Atomically apply mkdir/put/move/delete operations as one reversible revision. See tool_contract first. Read impact before resource changes. Put replaces one record; use inspect to preserve fields.",
+    "inputSchema": {
+      "properties": {
+        "expected_revision": {
+          "title": "Expected Revision",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "changes": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Changes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "label",
+        "changes"
+      ],
+      "title": "change_applyArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "history",
+    "description": "List recent immutable revisions with labels and timestamps.",
+    "inputSchema": {
+      "properties": {
+        "limit": {
+          "default": 20,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "title": "historyArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "impact",
+    "description": "Find current process plans referencing a stable resource ID before changing or deleting it.",
+    "inputSchema": {
+      "properties": {
+        "resource_id": {
+          "title": "Resource Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id"
+      ],
+      "title": "impactArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "validate",
+    "description": "Check plan structure and resources against its pinned passport; engineering validity remains unknown.",
+    "inputSchema": {
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "validateArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "route_preview",
+    "description": "Render a draft HTML route card from a plan. Returns HTML; does not write files. Not an approved ESTD form.",
+    "inputSchema": {
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "route_previewArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "template_get",
+    "description": "Read the effective route HTML template (custom or builtin), workspace revision and allowed placeholders. Max 64 KB.",
+    "inputSchema": {
+      "properties": {
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        }
+      },
+      "title": "template_getArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "template_edit",
+    "description": "Replace the route HTML/CSS template for this workspace. Read template_get first and preserve $rows. Validates placeholders, records a Git revision and rolls back errors. Existing process data is unchanged. Restore by reading a historical template_get and saving its html again.",
+    "inputSchema": {
+      "properties": {
+        "expected_revision": {
+          "title": "Expected Revision",
+          "type": "string"
+        },
+        "html": {
+          "title": "Html",
+          "type": "string"
+        },
+        "label": {
+          "default": "Customize route card template",
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "html"
+      ],
+      "title": "template_editArguments",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": false
+    }
+  }
+]

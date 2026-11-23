@@ -1,11 +1,12 @@
 [project]
-name = "cad-lab-process-planning"
+name = "cad-lab-mini-capp"
 version = "0.1.0"
-description = "Agent-oriented process planning and production catalog MCP service"
+description = "mini CAPP: demonstration CAPP for enterprise AI workflows and tailored integration"
 requires-python = ">=3.11"
 dependencies = ["mcp>=1.20,<2", "pydantic>=2.10,<3"]
 
 [project.scripts]
+mini-capp = "process_planning.server:main"
 process-planning = "process_planning.server:main"
 
 [build-system]
