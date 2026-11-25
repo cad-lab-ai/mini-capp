@@ -10,10 +10,9 @@ PDM/PLM/ERP, справочники оборудования, формы док�
 конкретные процессы и доступные интерфейсы. Состав интеграции определяем после обследования;
 перечисленные подключения не входят в готовые возможности демоверсии.
 
-**Хотите увидеть этот сценарий на своей детали и оборудовании?**
-[Обсудить демонстрацию и персональное внедрение с cad-lab](https://cad-lab.xyz/).
+**[Скачать cad-lab для Windows и попробовать mini CAPP](https://cad-lab.xyz/app/?utm_source=github&utm_medium=referral&utm_campaign=desktop_download&utm_content=mini-capp#download)**
 
-Публичный репозиторий: [GitHub](https://github.com/cad-lab-ai/mini-capp).
+Хотите пройти сценарий на своей детали и оборудовании? [Обсудить демонстрацию и внедрение](https://cad-lab.xyz/?utm_source=github&utm_medium=referral&utm_campaign=enterprise_pilot&utm_content=mini-capp#business).
 
 Локальный MCP-сервис хранит каталог производства и
 структурированные техпроцессы, проверяет ссылки на ресурсы и строит обзорную HTML-карту.
