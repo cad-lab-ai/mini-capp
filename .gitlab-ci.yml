@@ -15,7 +15,7 @@ test:
       files: [uv.lock]
     paths: [.ci-uv/]
   script:
-    - apt-get update && apt-get install -y --no-install-recommends git
+    - apt-get update && apt-get install -y --no-install-recommends curl git unzip
     - mkdir -p .ci-uv/bin
     - |
       if [ ! -x .ci-uv/bin/uv ]; then
@@ -23,9 +23,21 @@ test:
         cp "$(command -v uv)" .ci-uv/bin/uv
       fi
       export PATH="$CI_PROJECT_DIR/.ci-uv/bin:$PATH"
-    - uv sync --frozen
-    - uv run --frozen pytest -q
-    - uv run --frozen python tools/package_plugin.py
+    - |
+      # A fresh runner can seed its cache from the last green main job. The new
+      # checkout still gets its own environment, package rebuild and test run.
+      if [ ! -d "$UV_CACHE_DIR" ]; then
+        previous_artifact=$(mktemp)
+        if curl --fail --silent --show-error --max-time 30 --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_DEFAULT_BRANCH/download?job=test" \
+          --output "$previous_artifact"; then
+          unzip -q "$previous_artifact" '.ci-uv/cache/*' || true
+        fi
+        rm -f "$previous_artifact"
+      fi
+      uv sync --frozen --offline || uv sync --frozen
+    - uv run --no-sync pytest -q
+    - uv run --no-sync python tools/package_plugin.py
     - git diff --exit-code -- plugin/runtime.json plugin/tools.json
   artifacts:
     expire_in: 1 day
