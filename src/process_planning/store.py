@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 import re
 import subprocess
+from tempfile import TemporaryDirectory
 
 from .models import ProcessPlan, Resource
 from .templating import FIELDS, builtin_template, check_template
@@ -47,23 +48,44 @@ class Store:
             if (self.root / ".git").exists():
                 if not (self.root / ".planning-workspace").exists():
                     raise ValueError("not a service-owned workspace")
-                return {"revision": self.git("rev-parse", "HEAD")}
+                try:
+                    return {"revision": self.revision()}
+                except ValueError as error:
+                    raise ValueError("workspace_init_incomplete: inspect the existing directory or use a new empty one") from error
             if any(p.name != ".planning.lock" for p in self.root.iterdir()):
                 raise ValueError("initialization requires an empty directory")
-            self.git("init", "-b", "main")
-            self.git("config", "user.name", "Process Planning")
-            self.git("config", "user.email", "process-planning@localhost")
-            self.git("config", "core.quotePath", "false")
-            (self.root / ".gitignore").write_text(".planning.lock\n", encoding="utf-8")
-            (self.root / ".planning-workspace").write_text("1\n", encoding="utf-8")
-            for section in SECTIONS:
-                self.path(f"factory/{section}").mkdir(parents=True)
-                self.path(f"factory/{section}/.keep").touch()
-            self.path("processes").mkdir()
-            self.path("processes/.keep").touch()
-            self.git("add", "--all")
-            self.git("commit", "-m", "Initialize production catalog")
-            return {"revision": self.git("rev-parse", "HEAD")}
+            self.path("factory")  # Reject a linked workspace before creating any repository data.
+            with TemporaryDirectory(prefix=".planning-init-", dir=self.root) as directory:
+                staged = Store(directory)
+                staged.git("init", "-b", "main")
+                staged.git("config", "user.name", "Process Planning")
+                staged.git("config", "user.email", "process-planning@localhost")
+                staged.git("config", "core.quotePath", "false")
+                (staged.root / ".gitignore").write_text(".planning.lock\n", encoding="utf-8")
+                (staged.root / ".planning-workspace").write_text("1\n", encoding="utf-8")
+                for section in SECTIONS:
+                    staged.path(f"factory/{section}").mkdir(parents=True)
+                    staged.path(f"factory/{section}/.keep").touch()
+                staged.path("processes").mkdir()
+                staged.path("processes/.keep").touch()
+                staged.git("add", "--all")
+                staged.git("commit", "-m", "Initialize production catalog")
+                revision = staged.revision()
+
+                # Publish only a committed workspace. The lock covers the move and any rollback.
+                published = []
+                try:
+                    for name in ("factory", "processes", ".gitignore", ".planning-workspace", ".git"):
+                        target = self.root / name
+                        if target.exists() or target.is_symlink():
+                            raise ValueError("workspace changed during initialization")
+                        (staged.root / name).rename(target)
+                        published.append(target)
+                except Exception:
+                    for target in reversed(published):
+                        target.rename(staged.root / target.name)
+                    raise
+                return {"revision": revision}
 
     def path(self, value: str) -> Path:
         parts = PurePosixPath(value).parts

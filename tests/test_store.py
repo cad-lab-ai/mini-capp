@@ -21,6 +21,47 @@ def put(store, path, record):
     return store.apply(store.history()["commits"][0]["revision"], "test edit", [{"op": "put", "path": path, "record": record}])["revision"]
 
 
+def test_can_retry_after_first_git_commit_fails(tmp_path, monkeypatch):
+    workspace = Store(tmp_path / "workspace")
+    hooks = tmp_path / "hooks"
+    hooks.mkdir()
+    hook = hooks / "pre-commit"
+    hook.write_text("#!/bin/sh\necho 'initial commit refused' >&2\nexit 1\n", encoding="utf-8", newline="\n")
+    hook.chmod(0o755)
+    git = Store.git
+
+    def git_with_refusing_hook(store, *args):
+        if args[0] == "commit":
+            return git(store, "-c", f"core.hooksPath={hooks.as_posix()}", *args)
+        return git(store, *args)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Store, "git", git_with_refusing_hook)
+        with pytest.raises(ValueError, match="initial commit refused"):
+            workspace.initialize()
+    assert list(workspace.root.iterdir()) == []
+
+    initialized = workspace.initialize()
+    assert workspace.initialize() == initialized
+    assert workspace.git("rev-list", "--count", "HEAD") == "1"
+    assert workspace.git("status", "--porcelain") == ""
+
+
+def test_preserves_workspace_left_incomplete_by_an_older_version(tmp_path):
+    workspace = Store(tmp_path / "workspace")
+    workspace.root.mkdir()
+    workspace.git("init", "-b", "main")
+    (workspace.root / ".planning-workspace").touch()
+    note = workspace.root / "note.txt"
+    note.write_text("keep me", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="workspace_init_incomplete"):
+        workspace.initialize()
+
+    assert (workspace.root / ".git").is_dir()
+    assert note.read_text(encoding="utf-8") == "keep me"
+
+
 def plan(revision):
     return {"id": "PLAN-001", "name": "Test route", "part_revision": "A", "drawing_source": "test fixture", "passport_revision": revision,
             "material": "test material", "blank": "test blank", "assumptions": ["<script>alert(1)</script>"],
