@@ -45,7 +45,7 @@ uv run --frozen mini-capp
 Сервис использует транспорт MCP stdio через [Python SDK v1](https://py.sdk.modelcontextprotocol.io/v1/).
 Процесс ожидает MCP-клиента; в stdout нет интерактивного CLI.
 Без переменной окружения данные находятся в `~/.cad-lab/process-planning`.
-Каталог создаётся только явным вызовом `workspace_initialize`.
+Рабочая Git-ревизия и стартовые разделы появляются после `workspace_initialize`. До этого обращение к сервису может создать пустую папку для блокировки.
 
 Пример настройки клиента (замените абсолютные пути):
 
@@ -54,8 +54,8 @@ uv run --frozen mini-capp
   "mcpServers": {
     "mini-capp": {
       "command": "uv",
-      "args": ["run", "--frozen", "--directory", "D:/projects/mini-capp", "mini-capp"],
-      "env": {"MINI_CAPP_WORKSPACE": "D:/cad-data/factory-01"}
+      "args": ["run", "--frozen", "--directory", "<путь к клону mini-capp>", "mini-capp"],
+      "env": {"MINI_CAPP_WORKSPACE": "<путь к отдельной папке данных>"}
     }
   }
 }
