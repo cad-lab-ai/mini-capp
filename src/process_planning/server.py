@@ -27,7 +27,12 @@ def tool_contract() -> dict:
             "semantics": "put replaces one complete record; omitted fields receive schema defaults. mkdir creates a section. move preserves record IDs. delete requires an empty directory or one file. All paths relative to factory/ or processes/. Batch = one Git commit, errors roll back the whole batch. No code execution. Expected revision prevents lost updates.",
             "limits": {"record_bytes": 64000, "batch_changes": 100, "list_limit": 100},
             "templates": "template_get reads the effective route template. template_edit replaces the workspace template with expected_revision, as one Git commit. $rows is required; template_get lists all allowed placeholders. route_preview uses the template at the requested plan revision, with builtin fallback. change_apply cannot edit templates.",
-            "checks": "Schema, unique IDs, pinned revision existence, resource references/availability/evidence, time provenance. Engineering validity and ESTD compliance remain unknown.",
+            "checks": "workspace_initialize creates service-owned Git history and starter sections in an empty directory. "
+                      "Other tools may create the empty directory for locking before reporting workspace not initialized. "
+                      "change_apply checks record schemas, unique IDs within each collection, unique operation IDs within each plan, "
+                      "and existence of pinned passport revisions before commit. validate checks the selected plan schema, pinned "
+                      "revision, resource references, availability and evidence, time provenance, and open questions. It assumes "
+                      "records were written through the workspace service. Engineering validity and ESTD compliance remain unknown.",
             "deployment": "Local stdio only; service-owned workspace, no external writers. Not a multi-tenant HTTP service."}
 
 

@@ -8,8 +8,10 @@ from mcp.client.stdio import stdio_client
 
 
 def test_real_stdio_roundtrip(tmp_path):
+    workspace = tmp_path / "workspace"
+
     async def run():
-        env = dict(os.environ, PROCESS_PLANNING_WORKSPACE=str(tmp_path / "workspace"))
+        env = dict(os.environ, MINI_CAPP_WORKSPACE=str(workspace))
         params = StdioServerParameters(command=sys.executable, args=["-m", "process_planning.server"], env=env)
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as client:
@@ -20,9 +22,18 @@ def test_real_stdio_roundtrip(tmp_path):
                 assert tools["template_edit"].annotations.destructiveHint
                 assert tools["inspect"].annotations.readOnlyHint
                 assert tools["change_apply"].annotations.destructiveHint
+                assert not workspace.exists()
+                result = await client.call_tool("catalog_list", {})
+                assert result.isError
+                assert "workspace not initialized" in result.content[0].text
+                assert list(workspace.iterdir()) == []
                 result = await client.call_tool("workspace_initialize", {})
                 assert not result.isError
                 revision = json.loads(result.content[0].text)["revision"]
+                assert (workspace / ".git").is_dir()
+                assert (workspace / "factory" / "equipment").is_dir()
+                result = await client.call_tool("workspace_initialize", {})
+                assert json.loads(result.content[0].text)["revision"] == revision
                 result = await client.call_tool("change_apply", {"expected_revision": revision, "label": "Add section over MCP", "changes": [{"op": "mkdir", "path": "factory/equipment/turning"}]})
                 assert not result.isError
                 result = await client.call_tool("catalog_list", {"path": "factory/equipment"})

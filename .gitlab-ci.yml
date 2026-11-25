@@ -1,18 +1,27 @@
 stages: [test, mirror]
 default:
   tags: [dind]
-  image: mirror.gcr.io/library/python:3.12-slim
+  image: mirror.gcr.io/library/python:3.11-slim-bookworm
 variables:
   GIT_DEPTH: "0"
+  UV_CACHE_DIR: $CI_PROJECT_DIR/.ci-uv/cache
+  UV_PYTHON: python3.11
+  UV_PYTHON_DOWNLOADS: never
 test:
   stage: test
   script:
     - apt-get update && apt-get install -y --no-install-recommends git
-    - pip install uv
+    - mkdir -p .ci-uv/bin
+    - python -m pip install --timeout 45 uv
+    - cp "$(command -v uv)" .ci-uv/bin/uv
     - uv sync --frozen
     - uv run --frozen pytest -q
     - uv run --frozen python tools/package_plugin.py
     - git diff --exit-code -- plugin/runtime.json plugin/tools.json
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - .ci-uv/
 mirror:github:
   stage: mirror
   rules:
@@ -23,9 +32,14 @@ mirror:github:
 test:plugin:
   stage: test
   image: mirror.gcr.io/library/node:24-bookworm-slim
+  needs:
+    - job: test
+      artifacts: true
+  variables:
+    UV_OFFLINE: "1"
   script:
-    - apt-get update && apt-get install -y --no-install-recommends git python3 python3-pip
-    - pip3 install --break-system-packages uv
+    - apt-get update && apt-get install -y --no-install-recommends git python3
+    - export PATH="$CI_PROJECT_DIR/.ci-uv/bin:$PATH"
     - cd plugin
     - npm ci --ignore-scripts --no-audit --no-fund
     - npm run typecheck
